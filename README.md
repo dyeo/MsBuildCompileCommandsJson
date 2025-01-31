@@ -13,19 +13,22 @@ defines, etc.) for accurate IntelliSense.
 ## Usage
 
 Building the project is straightforward:
-```
+
+```shell
 dotnet build
 ```
 
 Then, invoke MSBuild with [the `-logger` option](https://docs.microsoft.com/en-us/visualstudio/msbuild/msbuild-command-line-reference).
 For example:
-```
+
+```shell
 msbuild -logger:/path/to/CompileCommandsJson.dll MyProject
 ```
 
 By default, `compile_commands.json` is written in the current directory. You can
 control the output path using a parameter, e.g.:
-```
+
+```shell
 msbuild -logger:/path/to/CompileCommandsJson.dll;my_new_compile_commands.json MyProject
 ```
 
@@ -45,12 +48,12 @@ clean build, and to avoid confusing tools (such as VSCode) that may observe the
 file as it is written, you should probably write the output to a temporary file
 and rename it only after the build succeeds. Typical usage is roughly:
 
-```
+```shell
 rm -r out
 msbuild -logger:CompileCommandsLogger.dll;cctmp.json
 mv cctmp.json compile_commands.json
 ```
 
- ## Author
+## Author
 
  Andrew Baumann
