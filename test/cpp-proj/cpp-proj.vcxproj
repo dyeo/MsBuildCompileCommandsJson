@@ -23,11 +23,13 @@
 <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
 
 <ItemGroup>
-  <ClCompile Include="main.cpp" />
+  <ClCompile Include="src/main.cpp">
+		<AdditionalIncludeDirectories>./inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+	</ClCompile>
 </ItemGroup>
 
 <ItemGroup>
-  <ClInclude Include="main.h" />
+  <ClInclude Include="inc/main.h" />
 </ItemGroup>
 
 <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Targets" />
