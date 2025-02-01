@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.Build.Traversal/2.0.12">
+  <ItemGroup>
+    <ProjectFile Include="cpp-proj\cpp-proj.vcxproj" />
+  </ItemGroup>
+</Project>
