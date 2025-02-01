@@ -240,6 +240,8 @@ public class CompileCommandsJson : Logger
                 }
 
             }
+        } else {
+            logStreamWriter.WriteLine(args.SenderName + " - " +args.Message);
         }
     }
 
