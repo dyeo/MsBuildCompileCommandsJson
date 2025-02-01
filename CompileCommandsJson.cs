@@ -135,10 +135,8 @@ public class CompileCommandsJson : Logger
                 throw new LoggerException($"Unexpected lack of CL.exe in {taskArgs.CommandLine}");
             }
 
-            logStreamWriter.WriteLine(taskArgs.CommandLine);
-
             string compilerPath = taskArgs.CommandLine.Substring(0, clExeIndex + clExe.Length - 1);
-            string argsString = taskArgs.CommandLine.Substring(clExeIndex + clExe.Length).TrimStart();
+            string argsString = taskArgs.CommandLine.Substring(clExeIndex + clExe.Length).TrimStart().Replace("\n", " ").TrimEnd().Replace("\r", " ").TrimEnd();
             string[] cmdArgs = CommandLineToArgs(argsString);
 
             // Options that consume the following argument.
