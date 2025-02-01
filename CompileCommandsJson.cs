@@ -9,7 +9,7 @@ using Newtonsoft.Json;
 
 /// <summary>
 /// MSBuild logger to emit a compile_commands.json file from a C++ project build.
-/// Arguments (all arguments are optional and order does not matter): 
+/// Arguments (all arguments are optional and order does not matter):
 /// path:[a valid path, relative or absolute] - Where to output the file, if no option is specified it will output in the working directory
 /// task:[task name] - A custom task name to search for. We check if the task name from MSBuild contains this string.
 ///     This is useful for distributed build systems that sometimes use their own custom CL task.
@@ -110,10 +110,10 @@ public class CompileCommandsJson : Logger
 
     private void EventSource_AnyEventRaised(object sender, BuildEventArgs args)
     {
-        if (args is TaskCommandLineEventArgs taskArgs 
+        if (args is TaskCommandLineEventArgs taskArgs
             && (taskArgs.TaskName == "CL" || (!string.IsNullOrEmpty(customTask) && taskArgs.TaskName.Contains(customTask))))
         {
-            
+
             // taskArgs.CommandLine begins with the full path to the compiler, but that path is
             // *not* escaped/quoted for a shell, and may contain spaces, such as C:\Program Files
             // (x86)\Microsoft Visual Studio\... As a workaround for this misfeature, find the
@@ -132,7 +132,7 @@ public class CompileCommandsJson : Logger
 
             // Options that consume the following argument.
             string[] optionsWithParam = {
-                "D", "I", "F", "U", "FI", "FU", 
+                "D", "I", "F", "U", "FI", "FU",
                 "analyze:log", "analyze:stacksize", "analyze:max_paths",
                 "analyze:ruleset", "analyze:plugin"};
 
@@ -242,7 +242,7 @@ public class CompileCommandsJson : Logger
     static string[] CommandLineToArgs(string commandLine)
     {
         int argc;
-        var argv = CommandLineToArgvW(commandLine, out argc);        
+        var argv = CommandLineToArgvW(commandLine, out argc);
         if (argv == IntPtr.Zero)
             throw new System.ComponentModel.Win32Exception();
         try
