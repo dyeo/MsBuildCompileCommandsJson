@@ -4,6 +4,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Text;
+using System.Text.RegularExpressions;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 using Newtonsoft.Json;
@@ -136,7 +137,8 @@ public class CompileCommandsJson : Logger
             }
 
             string compilerPath = taskArgs.CommandLine.Substring(0, clExeIndex + clExe.Length - 1);
-            string argsString = taskArgs.CommandLine.Substring(clExeIndex + clExe.Length).TrimStart().Replace("\n", " ").TrimEnd().Replace("\r", " ").TrimEnd();
+            string argsString = taskArgs.CommandLine.Substring(clExeIndex + clExe.Length).Replace('\n', ' ').Replace('\r', ' ').Replace('\t', ' ').TrimEnd();
+            argsString = Regex.Replace(argsString, @"\s+", " ");
             string[] cmdArgs = CommandLineToArgs(argsString);
 
             // Options that consume the following argument.
