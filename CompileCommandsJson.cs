@@ -241,7 +241,7 @@ public class CompileCommandsJson : Logger
 
             }
         } else {
-            logStreamWriter.WriteLine(args.SenderName + " - " +args.Message);
+            logStreamWriter.WriteLine(args.GetType().Name + " -- " + args.SenderName + " - " + args.Message);
         }
     }
 
