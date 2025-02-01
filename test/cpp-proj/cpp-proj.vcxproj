@@ -138,10 +138,14 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup> -->
-  <ItemGroup>
-    <ClCompile Include="$(MSBuildProjectDirectory)\src\main.cpp">
+  <ItemDefinitionGroup>
+    <ClCompile>
     <AdditionalIncludeDirectories>$(MSBuildProjectDirectory)\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="$(MSBuildProjectDirectory)\src\main.cpp" />
+    <ClCompile Include="$(MSBuildProjectDirectory)\src\utils.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <!-- <ImportGroup Label="ExtensionTargets">

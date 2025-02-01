@@ -113,7 +113,6 @@ public class CompileCommandsJson : Logger
         if (args is TaskCommandLineEventArgs taskArgs
             && (taskArgs.TaskName == "CL" || (!string.IsNullOrEmpty(customTask) && taskArgs.TaskName.Contains(customTask))))
         {
-
             // taskArgs.CommandLine begins with the full path to the compiler, but that path is
             // *not* escaped/quoted for a shell, and may contain spaces, such as C:\Program Files
             // (x86)\Microsoft Visual Studio\... As a workaround for this misfeature, find the
