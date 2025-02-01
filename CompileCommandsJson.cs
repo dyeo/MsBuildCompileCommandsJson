@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Security;
+using System.Text;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 using Newtonsoft.Json;
@@ -40,6 +41,11 @@ public class CompileCommandsJson : Logger
         // Default to writing compile_commands.json in the current directory,
         // but permit it to be overridden by a parameter.
         outputFilePath = "compile_commands.json";
+
+        logFilePath = "compile_commands.log";
+        const bool append = false;
+        Encoding utf8WithoutBom = new UTF8Encoding(false);
+        logStreamWriter = new StreamWriter(logFilePath, append, utf8WithoutBom);
 
         if(!string.IsNullOrEmpty(Parameters))
         {
@@ -124,6 +130,8 @@ public class CompileCommandsJson : Logger
             {
                 throw new LoggerException($"Unexpected lack of CL.exe in {taskArgs.CommandLine}");
             }
+
+            logStreamWriter.WriteLine(taskArgs.CommandLine);
 
             string compilerPath = taskArgs.CommandLine.Substring(0, clExeIndex + clExe.Length - 1);
             string argsString = taskArgs.CommandLine.Substring(clExeIndex + clExe.Length).TrimStart();
@@ -265,6 +273,7 @@ public class CompileCommandsJson : Logger
     public override void Shutdown()
     {
         File.WriteAllText(outputFilePath, JsonConvert.SerializeObject(compileCommands, Formatting.Indented));
+        logStreamWriter.Close();
         base.Shutdown();
     }
 
@@ -277,6 +286,8 @@ public class CompileCommandsJson : Logger
 
     string customTask;
     string outputFilePath;
+    string logFilePath;
     private List<CompileCommand> compileCommands;
     private Dictionary<string, CompileCommand> commandLookup;
+    private StreamWriter logStreamWriter;
 }
