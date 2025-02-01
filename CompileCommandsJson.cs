@@ -116,9 +116,12 @@ public class CompileCommandsJson : Logger
 
     private void EventSource_AnyEventRaised(object sender, BuildEventArgs args)
     {
-        if (args is TaskCommandLineEventArgs taskArgs
-            && (taskArgs.TaskName == "CL" || (!string.IsNullOrEmpty(customTask) && taskArgs.TaskName.Contains(customTask))))
-        {
+        if (args is TaskCommandLineEventArgs taskArgs) {
+            logStreamWriter.WriteLine(taskArgs.TaskName + " ---- " + taskArgs.CommandLine);
+
+            if (!(taskArgs.TaskName == "CL" || taskArgs.TaskName == "TrackedExec" || (!string.IsNullOrEmpty(customTask) && taskArgs.TaskName.Contains(customTask)))) {
+                return;
+            }
             // taskArgs.CommandLine begins with the full path to the compiler, but that path is
             // *not* escaped/quoted for a shell, and may contain spaces, such as C:\Program Files
             // (x86)\Microsoft Visual Studio\... As a workaround for this misfeature, find the
@@ -241,7 +244,7 @@ public class CompileCommandsJson : Logger
 
             }
         } else {
-            logStreamWriter.WriteLine(args.GetType().Name + " -- " + args.SenderName + " - " + args.Message);
+            logStreamWriter.WriteLine(args.GetType().Name + " -RAW- " + args.SenderName + " - " + args.Message);
         }
     }
 
