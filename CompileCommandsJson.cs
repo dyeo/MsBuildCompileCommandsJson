@@ -89,7 +89,8 @@ public class CompileCommandsJson : Logger
             //but there is no discernable performance difference even on very large code bases
             foreach(CompileCommand command in compileCommands)
             {
-                commandLookup.Add(command.file, command);
+                string key = command.directory + command.file;
+                commandLookup.Add(key, command);
             }
         }
         catch (Exception ex)
