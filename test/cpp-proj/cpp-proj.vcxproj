@@ -139,8 +139,8 @@
     </Link>
   </ItemDefinitionGroup> -->
   <ItemGroup>
-    <ClCompile Include="src/main.cpp">
-    <AdditionalIncludeDirectories>./inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    <ClCompile Include="$(MSBuildProjectDirectory)\src\main.cpp">
+    <AdditionalIncludeDirectories>$(MSBuildProjectDirectory)\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
