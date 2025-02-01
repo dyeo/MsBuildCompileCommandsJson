@@ -216,9 +216,10 @@ public class CompileCommandsJson : Logger
                 // the previous result, if it doesn't we add a new entry. We then write the entire list
                 // when the logger shuts down.
                 CompileCommand command;
-                if (commandLookup.ContainsKey(filename))
+                string key = dirname + filename;
+                if (commandLookup.ContainsKey(key))
                 {
-                    command = commandLookup[filename];
+                    command = commandLookup[key];
                     command.file = filename;
                     command.directory = dirname;
                     command.command = compileCommand;
@@ -227,7 +228,7 @@ public class CompileCommandsJson : Logger
                 {
                     command = new CompileCommand() { file = filename, directory = dirname, command = compileCommand };
                     compileCommands.Add(command);
-                    commandLookup.Add(filename, command);
+                    commandLookup.Add(key, command);
                 }
 
             }
