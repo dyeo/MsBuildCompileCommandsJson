@@ -136,7 +136,12 @@ public class CompileCommandsJson : Logger
                 throw new LoggerException($"Unexpected lack of CL.exe in {taskArgs.CommandLine}");
             }
 
+            List<string> arguments = new List<string>();
+
             string compilerPath = taskArgs.CommandLine.Substring(0, clExeIndex + clExe.Length - 1);
+
+            arguments.Add(Path.GetFullPath(compilerPath));
+
             string argsString = taskArgs.CommandLine.Substring(clExeIndex + clExe.Length).Replace('\n', ' ').Replace('\r', ' ').Replace('\t', ' ').TrimEnd();
             argsString = Regex.Replace(argsString, @"\s+", " ");
             string[] cmdArgs = CommandLineToArgs(argsString);
@@ -192,6 +197,8 @@ public class CompileCommandsJson : Logger
                     // non-argument, add it to our list of potential sources
                     maybeFilenames.Add(cmdArgs[i]);
                 }
+
+                arguments.Add(cmdArgs[i]);
             }
 
             // Iterate over potential sources, and decide (based on the filename)
@@ -217,7 +224,6 @@ public class CompileCommandsJson : Logger
             }
 
             // simplify the compile command to avoid .. etc.
-            string compileCommand = '"' + Path.GetFullPath(compilerPath) + "\" " + argsString;
             string dirname = Path.GetDirectoryName(taskArgs.ProjectFile);
 
             // For each source file, a CompileCommand entry
@@ -234,11 +240,11 @@ public class CompileCommandsJson : Logger
                     command = commandLookup[key];
                     command.file = filename;
                     command.directory = dirname;
-                    command.command = compileCommand;
+                    command.arguments = arguments;
                 }
                 else
                 {
-                    command = new CompileCommand() { file = filename, directory = dirname, command = compileCommand };
+                    command = new CompileCommand() { file = filename, directory = dirname, arguments = arguments };
                     compileCommands.Add(command);
                     commandLookup.Add(key, command);
                 }
@@ -286,7 +292,7 @@ public class CompileCommandsJson : Logger
     class CompileCommand
     {
         public string directory;
-        public string command;
+        public List<string> arguments;
         public string file;
     }
 
