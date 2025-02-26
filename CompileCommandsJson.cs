@@ -18,9 +18,9 @@ using Newtonsoft.Json;
 ///
 /// Argument examples
 /// None - /logger:path/to/CompileCommands.dll
-/// Path - /logger:path/to/CompileCommands.dll;path:custom/path/here.json
-/// Task - /logger:path/to/CompileCommands.dll;task:customTaskName
-/// Both - /logger:path/to/CompileCommands.dll;path:custom/path/here.json,task:customTaskName
+/// Path - /logger:path/to/CompileCommands.dll&path:custom/path/here.json
+/// Task - /logger:path/to/CompileCommands.dll&task:customTaskName
+/// Both - /logger:path/to/CompileCommands.dll&path:custom/path/here.json,task:customTaskName
 ///
 /// </summary>
 /// <remarks>
@@ -43,10 +43,7 @@ public class CompileCommandsJson : Logger
         // but permit it to be overridden by a parameter.
         outputFilePath = "compile_commands.json";
 
-        logFilePath = "compile_commands.log";
         const bool append = false;
-        Encoding utf8WithoutBom = new UTF8Encoding(false);
-        logStreamWriter = new StreamWriter(logFilePath, append, utf8WithoutBom);
 
         if(!string.IsNullOrEmpty(Parameters))
         {
@@ -63,10 +60,30 @@ public class CompileCommandsJson : Logger
                 {
                     customTask = arg.Substring(5);
                 }
+                else if(arg.ToLower().StartsWith("log:"))
+                {
+                    string logFile = arg.Substring(4);
+                    if (!string.IsNullOrEmpty(logFile)){
+                        logFilePath = logFile;
+                    } else {
+                        logFilePath = "compile_commands.log";
+                    }
+                }
                 else
                 {
                     throw new LoggerException($"Unknown argument in compile command logger: {arg}");
                 }
+            }
+        }
+
+        if(!string.IsNullOrEmpty(logFilePath)) {
+            if (logFilePath.ToLower().StartsWith("stdout")){
+                logStreamWriter = new StreamWriter(Console.OpenStandardOutput());
+                logStreamWriter.AutoFlush = true;
+                Console.SetOut(logStreamWriter);
+            } else {
+                Console.WriteLine("Using " + logFilePath + " for logging");
+                logStreamWriter = new StreamWriter(logFilePath, append, new UTF8Encoding(false));
             }
         }
 
@@ -119,7 +136,7 @@ public class CompileCommandsJson : Logger
     private void EventSource_AnyEventRaised(object sender, BuildEventArgs args)
     {
         if (args is TaskCommandLineEventArgs taskArgs) {
-            logStreamWriter.WriteLine(taskArgs.TaskName + " ---- " + taskArgs.CommandLine);
+            log(taskArgs.TaskName + " ---- " + taskArgs.CommandLine);
 
             if (!(taskArgs.TaskName == "CL" || taskArgs.TaskName == "TrackedExec" || (!string.IsNullOrEmpty(customTask) && taskArgs.TaskName.Contains(customTask)))) {
                 return;
@@ -223,7 +240,6 @@ public class CompileCommandsJson : Logger
                 }
             }
 
-            // simplify the compile command to avoid .. etc.
             string dirname = Path.GetDirectoryName(taskArgs.ProjectFile);
 
             // For each source file, a CompileCommand entry
@@ -251,7 +267,7 @@ public class CompileCommandsJson : Logger
 
             }
         } else {
-            logStreamWriter.WriteLine(args.GetType().Name + " -RAW- " + args.SenderName + " - " + args.Message);
+            log(args.GetType().Name + " -RAW- " + args.SenderName + " - " + args.Message);
         }
     }
 
@@ -285,8 +301,17 @@ public class CompileCommandsJson : Logger
     public override void Shutdown()
     {
         File.WriteAllText(outputFilePath, JsonConvert.SerializeObject(compileCommands, Formatting.Indented));
-        logStreamWriter.Close();
+        if (logStreamWriter != null) {
+            logStreamWriter.Close();
+        }
         base.Shutdown();
+    }
+
+    void log (string message)
+    {
+        if (logStreamWriter != null) {
+            logStreamWriter.WriteLine(message);
+        }
     }
 
     class CompileCommand
