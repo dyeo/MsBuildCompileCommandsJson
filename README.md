@@ -16,6 +16,8 @@ Building the project is straightforward:
 
 ```shell
 dotnet build
+mkdir -p $HOME\bin
+cp .\bin\Debug\net462\* $HOME\bin
 ```
 
 Then, invoke MSBuild with [the `-logger` option](https://docs.microsoft.com/en-us/visualstudio/msbuild/msbuild-command-line-reference).
