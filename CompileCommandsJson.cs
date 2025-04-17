@@ -180,14 +180,13 @@ public class CompileCommandsJson : Logger
 
                 if (isOption && Array.Exists(optionsWithParam, e => e == option))
                 {
-                    i++; // skip next arg
+                    arguments.Add(cmdArgs[i++]);
                 }
                 else if (option == "Tc" || option == "Tp")
                 {
                     // next arg is definitely a source file
                     if (i + 1 < cmdArgs.Length)
                     {
-
                         filenames.Add(cmdArgs[i + 1]);
                     }
                 }

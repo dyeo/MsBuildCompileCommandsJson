@@ -17,7 +17,7 @@ Building the project is straightforward:
 ```shell
 dotnet build
 mkdir -p $HOME\bin
-cp .\bin\Debug\net462\* $HOME\bin
+cp .\bin\x64\Debug\net462\* $HOME\bin
 ```
 
 Then, invoke MSBuild with [the `-logger` option](https://docs.microsoft.com/en-us/visualstudio/msbuild/msbuild-command-line-reference).
@@ -32,6 +32,12 @@ control the output path using a parameter, e.g.:
 
 ```shell
 msbuild -logger:/path/to/CompileCommandsJson.dll;my_new_compile_commands.json MyProject
+```
+
+Testing
+
+```shell
+dotnet build .\CompileCommandsJson.csproj && git clean -dfx .\test\ && msbuild "/logger:${env:USERPROFILE}\Projects\MsBuildCompileCommandsJson\bin\x64\Debug\net462\CompileCommandsJson.dll" .\test\dir.proj
 ```
 
 ## Limitations
