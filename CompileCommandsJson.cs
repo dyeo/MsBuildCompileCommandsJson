@@ -136,7 +136,7 @@ public class CompileCommandsJson : Logger
     private void EventSource_AnyEventRaised(object sender, BuildEventArgs args)
     {
         if (args is TaskCommandLineEventArgs taskArgs) {
-            log(taskArgs.TaskName + " ---- " + taskArgs.CommandLine);
+            // log(taskArgs.TaskName + " ---- " + taskArgs.CommandLine);
 
             if (!(taskArgs.TaskName == "CL" || taskArgs.TaskName == "TrackedExec" || (!string.IsNullOrEmpty(customTask) && taskArgs.TaskName.Contains(customTask)))) {
                 return;
@@ -177,6 +177,7 @@ public class CompileCommandsJson : Logger
             {
                 bool isOption = cmdArgs[i].StartsWith("/") || cmdArgs[i].StartsWith("-");
                 string option = isOption ? cmdArgs[i].Substring(1) : "";
+                bool isFile = false;
 
                 if (isOption && Array.Exists(optionsWithParam, e => e == option))
                 {
@@ -212,11 +213,16 @@ public class CompileCommandsJson : Logger
                 {
                     // non-argument, add it to our list of potential sources
                     maybeFilenames.Add(cmdArgs[i]);
+                    isFile = true;
                 }
 
-                arguments.Add(cmdArgs[i]);
+                if (!isFile) {
+                    arguments.Add(cmdArgs[i]);
+                }
             }
 
+            log("*** Arguments " + string.Join(" ", arguments));
+            log("*** MaybeFilenames " + string.Join(" ", maybeFilenames));
             // Iterate over potential sources, and decide (based on the filename)
             // whether they are source inputs.
             foreach (string filename in maybeFilenames)
@@ -239,6 +245,8 @@ public class CompileCommandsJson : Logger
                 }
             }
 
+            log("*** Filenames " + string.Join(" ", filenames));
+
             string dirname = Path.GetDirectoryName(taskArgs.ProjectFile);
 
             // For each source file, a CompileCommand entry
@@ -250,23 +258,26 @@ public class CompileCommandsJson : Logger
                 // when the logger shuts down.
                 CompileCommand command;
                 string key = dirname + filename;
+                List<string> prms = new List<string>(arguments);
+                prms.Add(filename);
+
                 if (commandLookup.ContainsKey(key))
                 {
                     command = commandLookup[key];
                     command.file = filename;
                     command.directory = dirname;
-                    command.arguments = arguments;
+                    command.arguments = prms;
                 }
                 else
                 {
-                    command = new CompileCommand() { file = filename, directory = dirname, arguments = arguments };
+                    command = new CompileCommand() { file = filename, directory = dirname, arguments = prms };
                     compileCommands.Add(command);
                     commandLookup.Add(key, command);
                 }
 
             }
         } else {
-            log(args.GetType().Name + " -RAW- " + args.SenderName + " - " + args.Message);
+            // log(args.GetType().Name + " -RAW- " + args.SenderName + " - " + args.Message);
         }
     }
 
