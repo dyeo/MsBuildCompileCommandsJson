@@ -86,6 +86,12 @@ public class CompileCommandsJson : Logger
                 logStreamWriter = new StreamWriter(logFilePath, append, new UTF8Encoding(false));
             }
         }
+        // else
+        // {
+        //     logStreamWriter = new StreamWriter(Console.OpenStandardOutput());
+        //     logStreamWriter.AutoFlush = true;
+        //     Console.SetOut(logStreamWriter);
+        // }
 
         includeLookup = new Dictionary<string, bool>();
         eventSource.AnyEventRaised += EventSource_AnyEventRaised;
