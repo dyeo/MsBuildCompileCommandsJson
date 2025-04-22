@@ -156,6 +156,20 @@ public class CompileCommandsJson : Logger
             log("*** INCLUDE " + include);
         }
 
+        include = Environment.GetEnvironmentVariable("EXTERNAL_INCLUDE");
+        if (include != null)
+        {
+            string[] includePaths = include.Split(';');
+            foreach (string path in includePaths)
+            {
+                if (path.Length > 0 && !includeLookup.ContainsKey(path))
+                {
+                    includeLookup.Add(path, true);
+                }
+            }
+            log("*** EXTERNAL_INCLUDE " + include);
+        }
+
         if (args is TaskCommandLineEventArgs taskArgs)
         {
             // log(taskArgs.TaskName + " ---- " + taskArgs.CommandLine);
