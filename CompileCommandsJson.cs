@@ -221,6 +221,19 @@ public class CompileCommandsJson : Logger
                 }
             }
 
+            string include = Environment.GetEnvironmentVariable("INCLUDE");
+            if (include != null)
+            {
+                string[] includePaths = include.Split(';');
+                foreach (string path in includePaths)
+                {
+                    if (path.Length > 0)
+                    {
+                        arguments.Add("/I" + path);
+                    }
+                }
+            }
+
             log("*** Arguments " + string.Join(" ", arguments));
             log("*** MaybeFilenames " + string.Join(" ", maybeFilenames));
             // Iterate over potential sources, and decide (based on the filename)
