@@ -87,7 +87,7 @@ public class CompileCommandsJson : Logger
             }
         }
 
-        // includeLookup = new Dictionary<string, bool>();
+        includeLookup = new Dictionary<string, bool>();
         eventSource.AnyEventRaised += EventSource_AnyEventRaised;
         try
         {
@@ -136,6 +136,20 @@ public class CompileCommandsJson : Logger
 
     private void EventSource_AnyEventRaised(object sender, BuildEventArgs args)
     {
+        string include = Environment.GetEnvironmentVariable("INCLUDE");
+        if (include != null)
+        {
+            string[] includePaths = include.Split(';');
+            foreach (string path in includePaths)
+            {
+                if (path.Length > 0 && !includeLookup.ContainsKey(path))
+                {
+                    includeLookup.Add(path, true);
+                }
+            }
+            log("*** INCLUDE " + include);
+        }
+
         if (args is TaskCommandLineEventArgs taskArgs)
         {
             // log(taskArgs.TaskName + " ---- " + taskArgs.CommandLine);
@@ -222,19 +236,6 @@ public class CompileCommandsJson : Logger
                 if (!isFile)
                 {
                     arguments.Add(cmdArgs[i]);
-                }
-            }
-
-            string include = Environment.GetEnvironmentVariable("INCLUDE");
-            if (include != null)
-            {
-                string[] includePaths = include.Split(';');
-                foreach (string path in includePaths)
-                {
-                    if (path.Length > 0 && !includeLookup.ContainsKey(path))
-                    {
-                        includeLookup.Add(path, true);
-                    }
                 }
             }
 
@@ -363,8 +364,8 @@ public class CompileCommandsJson : Logger
     string logFilePath;
     private List<CompileCommand> compileCommands;
     private Dictionary<string, CompileCommand> commandLookup;
-    // private Dictionary<string, bool> includeLookup;
-    private static Dictionary<string, bool> includeLookup = new Dictionary<string, bool>();
+    private Dictionary<string, bool> includeLookup;
+    // private static Dictionary<string, bool> includeLookup = new Dictionary<string, bool>();
 
     private StreamWriter logStreamWriter;
 }
