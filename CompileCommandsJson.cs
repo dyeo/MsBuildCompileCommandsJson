@@ -135,10 +135,12 @@ public class CompileCommandsJson : Logger
 
     private void EventSource_AnyEventRaised(object sender, BuildEventArgs args)
     {
-        if (args is TaskCommandLineEventArgs taskArgs) {
+        if (args is TaskCommandLineEventArgs taskArgs)
+        {
             // log(taskArgs.TaskName + " ---- " + taskArgs.CommandLine);
 
-            if (!(taskArgs.TaskName == "CL" || taskArgs.TaskName == "TrackedExec" || (!string.IsNullOrEmpty(customTask) && taskArgs.TaskName.Contains(customTask)))) {
+            if (!(taskArgs.TaskName == "CL" || taskArgs.TaskName == "TrackedExec" || (!string.IsNullOrEmpty(customTask) && taskArgs.TaskName.Contains(customTask))))
+            {
                 return;
             }
             // taskArgs.CommandLine begins with the full path to the compiler, but that path is
@@ -216,7 +218,8 @@ public class CompileCommandsJson : Logger
                     isFile = true;
                 }
 
-                if (!isFile) {
+                if (!isFile)
+                {
                     arguments.Add(cmdArgs[i]);
                 }
             }
@@ -289,7 +292,9 @@ public class CompileCommandsJson : Logger
                 }
 
             }
-        } else {
+        }
+        else
+        {
             // log(args.GetType().Name + " -RAW- " + args.SenderName + " - " + args.Message);
         }
     }
