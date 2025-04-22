@@ -87,7 +87,7 @@ public class CompileCommandsJson : Logger
             }
         }
 
-        includeLookup = new Dictionary<string, bool>();
+        // includeLookup = new Dictionary<string, bool>();
         eventSource.AnyEventRaised += EventSource_AnyEventRaised;
         try
         {
@@ -363,6 +363,8 @@ public class CompileCommandsJson : Logger
     string logFilePath;
     private List<CompileCommand> compileCommands;
     private Dictionary<string, CompileCommand> commandLookup;
-    private Dictionary<string, bool> includeLookup;
+    // private Dictionary<string, bool> includeLookup;
+    private static Dictionary<string, bool> includeLookup = new Dictionary<string, bool>();
+
     private StreamWriter logStreamWriter;
 }
