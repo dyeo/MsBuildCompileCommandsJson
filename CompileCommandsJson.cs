@@ -97,6 +97,16 @@ public class CompileCommandsJson : Logger
 
         includeLookup = new Dictionary<string, bool>();
         eventSource.AnyEventRaised += EventSource_AnyEventRaised;
+        eventSource.BuildStarted += EventSource_BuildStarted;
+        eventSource.BuildFinished += EventSource_BuildFinished;
+        eventSource.ProjectStarted += EventSource_ProjectStarted;
+        eventSource.ProjectFinished += EventSource_ProjectFinished;
+        eventSource.TargetStarted += EventSource_TargetStarted;
+        eventSource.TargetFinished += EventSource_TargetFinished;
+        eventSource.TaskStarted += EventSource_TaskStarted;
+        eventSource.TaskFinished += EventSource_TaskFinished;
+        eventSource.CustomEventRaised += EventSource_CustomEventRaised;
+
         try
         {
             commandLookup = new Dictionary<string, CompileCommand>();
@@ -105,8 +115,8 @@ public class CompileCommandsJson : Logger
                 compileCommands = JsonConvert.DeserializeObject<List<CompileCommand>>(File.ReadAllText(outputFilePath));
             }
 
-			//AR - Not an else because it is possible for JsonConvert.DeserializeObject to return null
-            if(compileCommands == null)
+            //AR - Not an else because it is possible for JsonConvert.DeserializeObject to return null
+            if (compileCommands == null)
             {
                 compileCommands = new List<CompileCommand>();
             }
@@ -114,7 +124,7 @@ public class CompileCommandsJson : Logger
             //AR - Create a dictionary for cleaner and faster cache lookup
             //We could refactor the code to read and write directly to the cache
             //but there is no discernable performance difference even on very large code bases
-            foreach(CompileCommand command in compileCommands)
+            foreach (CompileCommand command in compileCommands)
             {
                 string key = command.directory + command.file;
                 commandLookup.Add(key, command);
@@ -142,6 +152,69 @@ public class CompileCommandsJson : Logger
 
     }
 
+    private void EventSource_BuildStarted(object sender, BuildStartedEventArgs args)
+    {
+        log("*** Build started: " + args.BuildEnvironment + " - " + args.Message);
+        foreach (KeyValuePair<string, string> entry in args.BuildEnvironment)
+        {
+            log("*** " + entry.Key + " = " + entry.Value);
+        }
+    }
+
+    private void EventSource_BuildFinished(object sender, BuildFinishedEventArgs args)
+    {
+        log("*** Build finished: " + args.BuildEventContext + " - " + args.Message);
+    }
+
+    private void EventSource_ProjectStarted(object sender, ProjectStartedEventArgs args)
+    {
+        log("*** Project started: " + args.ProjectFile + " - " + args.Message);
+        foreach (KeyValuePair<string, string> entry in args.GlobalProperties)
+        {
+            log("*** " + entry.Key + " = " + entry.Value);
+        }
+        log("*** ParentProjectBuildEventContext: " + args.ParentProjectBuildEventContext);
+        log("*** Items: " + args.Items);
+        foreach (System.Collections.DictionaryEntry item in args.Items)
+        {
+            log("*** Item: " + item.Key + " = " + item.Value);
+        }
+        log("*** ProjectId: " + args.ProjectId);
+        log("*** BuildEventContext: " + args.BuildEventContext);
+    }
+
+    private void EventSource_ProjectFinished(object sender, ProjectFinishedEventArgs args)
+    {
+        log("*** Project finished: " + args.ProjectFile + " - " + args.Message);
+    }
+
+    private void EventSource_TargetStarted(object sender, TargetStartedEventArgs args)
+    {
+        log("*** Target started: " + args.TargetName + " - " + args.Message);
+        log("*** Target Build Event : " + args.BuildEventContext);
+    }
+    private void EventSource_TargetFinished(object sender, TargetFinishedEventArgs args)
+    {
+        log("*** Target finished: " + args.TargetName + " - " + args.Message);
+        log("*** Target Build Event : " + args.BuildEventContext);
+    }
+    private void EventSource_TaskStarted(object sender, TaskStartedEventArgs args)
+    {
+        log("*** Task started: " + args.TaskName + " - " + args.Message);
+        log("*** Task Build Event : " + args.BuildEventContext);
+        log("*** Task Project File : " + args.ProjectFile);
+        log("*** Task Project File : " + args.TaskFile);
+    }
+    private void EventSource_TaskFinished(object sender, TaskFinishedEventArgs args)
+    {
+        log("*** Task finished: " + args.TaskName + " - " + args.Message);
+        log("*** Task Build Event : " + args.BuildEventContext);
+    }
+    private void EventSource_CustomEventRaised(object sender, CustomBuildEventArgs args)
+    {
+        log("*** Custom event raised: " + args.Message);
+        log("*** Custom event Build Event : " + args.BuildEventContext);
+    }
     private void EventSource_AnyEventRaised(object sender, BuildEventArgs args)
     {
         string include = Environment.GetEnvironmentVariable("INCLUDE");
