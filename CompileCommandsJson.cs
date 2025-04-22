@@ -87,6 +87,7 @@ public class CompileCommandsJson : Logger
             }
         }
 
+        includeLookup = new Dictionary<string, bool>();
         eventSource.AnyEventRaised += EventSource_AnyEventRaised;
         try
         {
@@ -230,10 +231,18 @@ public class CompileCommandsJson : Logger
                 string[] includePaths = include.Split(';');
                 foreach (string path in includePaths)
                 {
-                    if (path.Length > 0)
+                    if (path.Length > 0 && !includeLookup.ContainsKey(path))
                     {
-                        arguments.Add("/I" + path);
+                        includeLookup.Add(path, true);
                     }
+                }
+            }
+
+            if (includeLookup.Count > 0)
+            {
+                foreach (string path in includeLookup.Keys)
+                {
+                    arguments.Add("/I" + path);
                 }
             }
 
@@ -354,5 +363,6 @@ public class CompileCommandsJson : Logger
     string logFilePath;
     private List<CompileCommand> compileCommands;
     private Dictionary<string, CompileCommand> commandLookup;
+    private Dictionary<string, bool> includeLookup;
     private StreamWriter logStreamWriter;
 }
