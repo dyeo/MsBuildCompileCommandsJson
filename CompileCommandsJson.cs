@@ -18,9 +18,9 @@ using Newtonsoft.Json;
 ///
 /// Argument examples
 /// None - /logger:path/to/CompileCommands.dll
-/// Path - /logger:path/to/CompileCommands.dll&path:custom/path/here.json
-/// Task - /logger:path/to/CompileCommands.dll&task:customTaskName
-/// Both - /logger:path/to/CompileCommands.dll&path:custom/path/here.json,task:customTaskName
+/// Path - /logger:path/to/CompileCommands.dll&path=custom/path/here.json
+/// Task - /logger:path/to/CompileCommands.dll&task=customTaskName
+/// Both - /logger:path/to/CompileCommands.dll&path=custom/path/here.json,task:customTaskName
 ///
 /// </summary>
 /// <remarks>
@@ -45,27 +45,40 @@ public class CompileCommandsJson : Logger
 
         const bool append = false;
 
-        if(!string.IsNullOrEmpty(Parameters))
+        string compileCommandsPath = Environment.GetEnvironmentVariable("COMPILE_COMMANDS_PATH");
+        if (compileCommandsPath != null && compileCommandsPath.Length > 0)
+        {
+            outputFilePath = compileCommandsPath;
+        }
+        string cclog = Environment.GetEnvironmentVariable("COMPILE_COMMANDS_LOG_PATH");
+        if (cclog != null && cclog.Length > 0)
+        {
+            logFilePath = cclog;
+        }
+        if (!string.IsNullOrEmpty(Parameters))
         {
             string[] args = Parameters.Split(',');
 
-            for(int i = 0; i < args.Length; ++i)
+            for (int i = 0; i < args.Length; ++i)
             {
                 string arg = args[i];
-                if(arg.ToLower().StartsWith("path:"))
+                if (arg.ToLower().StartsWith("path="))
                 {
                     outputFilePath = arg.Substring(5);
                 }
-                else if(arg.ToLower().StartsWith("task:"))
+                else if (arg.ToLower().StartsWith("task="))
                 {
                     customTask = arg.Substring(5);
                 }
-                else if(arg.ToLower().StartsWith("log:"))
+                else if (arg.ToLower().StartsWith("log="))
                 {
                     string logFile = arg.Substring(4);
-                    if (!string.IsNullOrEmpty(logFile)){
+                    if (!string.IsNullOrEmpty(logFile))
+                    {
                         logFilePath = logFile;
-                    } else {
+                    }
+                    else
+                    {
                         logFilePath = "compile_commands.log";
                     }
                 }
