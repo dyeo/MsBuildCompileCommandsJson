@@ -50,10 +50,10 @@ public class CompileCommandsJson : Logger
         {
             outputFilePath = compileCommandsPath;
         }
-        string cclog = Environment.GetEnvironmentVariable("COMPILE_COMMANDS_LOG_PATH");
-        if (cclog != null && cclog.Length > 0)
+        string compileCommandsLog = Environment.GetEnvironmentVariable("COMPILE_COMMANDS_LOG_PATH");
+        if (compileCommandsLog != null && compileCommandsLog.Length > 0)
         {
-            logFilePath = cclog;
+            logFilePath = compileCommandsLog;
         }
         if (!string.IsNullOrEmpty(Parameters))
         {
@@ -110,15 +110,15 @@ public class CompileCommandsJson : Logger
 
         includeLookup = new Dictionary<string, bool>();
         eventSource.AnyEventRaised += EventSource_AnyEventRaised;
-        eventSource.BuildStarted += EventSource_BuildStarted;
-        eventSource.BuildFinished += EventSource_BuildFinished;
-        eventSource.ProjectStarted += EventSource_ProjectStarted;
-        eventSource.ProjectFinished += EventSource_ProjectFinished;
-        eventSource.TargetStarted += EventSource_TargetStarted;
-        eventSource.TargetFinished += EventSource_TargetFinished;
-        eventSource.TaskStarted += EventSource_TaskStarted;
-        eventSource.TaskFinished += EventSource_TaskFinished;
-        eventSource.CustomEventRaised += EventSource_CustomEventRaised;
+        // eventSource.BuildStarted += EventSource_BuildStarted;
+        // eventSource.BuildFinished += EventSource_BuildFinished;
+        // eventSource.ProjectStarted += EventSource_ProjectStarted;
+        // eventSource.ProjectFinished += EventSource_ProjectFinished;
+        // eventSource.TargetStarted += EventSource_TargetStarted;
+        // eventSource.TargetFinished += EventSource_TargetFinished;
+        // eventSource.TaskStarted += EventSource_TaskStarted;
+        // eventSource.TaskFinished += EventSource_TaskFinished;
+        // eventSource.CustomEventRaised += EventSource_CustomEventRaised;
 
         try
         {
