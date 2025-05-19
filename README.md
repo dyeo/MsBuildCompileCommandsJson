@@ -15,6 +15,9 @@ defines, etc.) for accurate IntelliSense.
 Building the project is straightforward:
 
 ```shell
+winget install --id Microsoft.DotNet.SDK.9
+winget install --id Microsoft.DotNet.Framework.DeveloperPack_4
+
 dotnet build
 mkdir -p $HOME\bin
 cp .\bin\x64\Debug\net462\* $HOME\bin
