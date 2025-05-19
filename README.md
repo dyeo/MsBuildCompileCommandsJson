@@ -48,8 +48,7 @@ There are two significant design limitations:
     during a build; in particular, for an incremental build, there will be no
     output for any targets that are considered up to date.
 
- 2. The logger truncates the JSON file at startup, and writes to it
-    incrementally throughout the build.
+ 2. If it finds an entry in the compile command file, it will not override the existing entry.
 
 Thus, for an accurate result you should use this logger only on a completely
 clean build, and to avoid confusing tools (such as VSCode) that may observe the
@@ -58,8 +57,7 @@ and rename it only after the build succeeds. Typical usage is roughly:
 
 ```shell
 rm -r out
-msbuild "-logger:CompileCommandsLogger.dll;path=cctmp.json"
-mv cctmp.json compile_commands.json
+msbuild "-logger:CompileCommandsLogger.dll"
 ```
 
 ## Author
