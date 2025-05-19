@@ -24,14 +24,14 @@ Then, invoke MSBuild with [the `-logger` option](https://docs.microsoft.com/en-u
 For example:
 
 ```shell
-msbuild -logger:/path/to/CompileCommandsJson.dll MyProject
+msbuild "-logger:/path/to/CompileCommandsJson.dll" MyProject
 ```
 
 By default, `compile_commands.json` is written in the current directory. You can
 control the output path using a parameter, e.g.:
 
 ```shell
-msbuild -logger:/path/to/CompileCommandsJson.dll;my_new_compile_commands.json MyProject
+msbuild "-logger:/path/to/CompileCommandsJson.dll;path=my_new_compile_commands.json" MyProject
 ```
 
 Testing
@@ -58,7 +58,7 @@ and rename it only after the build succeeds. Typical usage is roughly:
 
 ```shell
 rm -r out
-msbuild -logger:CompileCommandsLogger.dll;cctmp.json
+msbuild "-logger:CompileCommandsLogger.dll;path=cctmp.json"
 mv cctmp.json compile_commands.json
 ```
 

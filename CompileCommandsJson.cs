@@ -18,9 +18,9 @@ using Newtonsoft.Json;
 ///
 /// Argument examples
 /// None - /logger:path/to/CompileCommands.dll
-/// Path - /logger:path/to/CompileCommands.dll&path=custom/path/here.json
-/// Task - /logger:path/to/CompileCommands.dll&task=customTaskName
-/// Both - /logger:path/to/CompileCommands.dll&path=custom/path/here.json,task:customTaskName
+/// Path - /logger:path/to/CompileCommands.dll;path=custom/path/here.json
+/// Task - /logger:path/to/CompileCommands.dll;task=customTaskName
+/// Both - /logger:path/to/CompileCommands.dll;path=custom/path/here.json,task:customTaskName
 ///
 /// </summary>
 /// <remarks>
