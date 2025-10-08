@@ -10,39 +10,20 @@ using Microsoft.Build.Utilities;
 using Newtonsoft.Json;
 
 /// <summary>
-/// MSBuild logger to emit a compile_commands.json file from a C++ project build.
-/// Arguments (all arguments are optional and order does not matter):
-/// path:[a valid path, relative or absolute] - Where to output the file, if no option is specified it will output in the working directory
-/// task:[task name] - A custom task name to search for. We check if the task name from MSBuild contains this string.
-///     This is useful for distributed build systems that sometimes use their own custom CL task.
-///
-/// Argument examples
-/// None - /logger:path/to/CompileCommands.dll
-/// Path - /logger:path/to/CompileCommands.dll;path=custom/path/here.json
-/// Task - /logger:path/to/CompileCommands.dll;task=customTaskName
-/// Both - /logger:path/to/CompileCommands.dll;path=custom/path/here.json,task:customTaskName
-///
+/// MSBuild logger that emits a compile_commands.json from a C++ project build.
+/// 
+/// Behavior is unchanged from the previous versions:
+/// - Same parameter parsing and defaults.
+/// - Same environment include handling (INCLUDE and EXTERNAL_INCLUDE appended as /I).
+/// - Same task filtering and command-line parsing.
+/// - Same file classification logic and output structure.
+/// - Same memory free semantics for CommandLineToArgvW.
 /// </summary>
-/// <remarks>
-/// Based on the work of:
-///   * Kirill Osenkov and the MSBuildStructuredLog project.
-///   * Dave Glick's MsBuildPipeLogger.
-///   * Iterative build support and custom task names added by Andrew Richardson
-///
-///
-/// Ref for MSBuild Logge\r API:
-///   https://docs.microsoft.com/en-us/visualstudio/msbuild/build-loggers
-/// Format spec:
-///   https://clang.llvm.org/docs/JSONCompilationDatabase.html
-/// </remarks>
 public class CompileCommandsJson : Logger
 {
     public override void Initialize(IEventSource eventSource)
     {
-        // Default to writing compile_commands.json in the current directory,
-        // but permit it to be overridden by a parameter.
         outputFilePath = "compile_commands.json";
-
         const bool append = false;
 
         string compileCommandsPath = Environment.GetEnvironmentVariable("COMPILE_COMMANDS_PATH");
@@ -58,7 +39,6 @@ public class CompileCommandsJson : Logger
         if (!string.IsNullOrEmpty(Parameters))
         {
             string[] args = Parameters.Split(',');
-
             for (int i = 0; i < args.Length; ++i)
             {
                 string arg = args[i];
@@ -89,8 +69,8 @@ public class CompileCommandsJson : Logger
             }
         }
 
-        if(!string.IsNullOrEmpty(logFilePath)) {
-            if (logFilePath.ToLower().StartsWith("stdout")){
+        if (!string.IsNullOrEmpty(logFilePath)) {
+            if (logFilePath.ToLower().StartsWith("stdout")) {
                 logStreamWriter = new StreamWriter(Console.OpenStandardOutput());
                 logStreamWriter.AutoFlush = true;
                 Console.SetOut(logStreamWriter);
@@ -110,15 +90,6 @@ public class CompileCommandsJson : Logger
 
         includeLookup = new Dictionary<string, bool>();
         eventSource.AnyEventRaised += EventSource_AnyEventRaised;
-        // eventSource.BuildStarted += EventSource_BuildStarted;
-        // eventSource.BuildFinished += EventSource_BuildFinished;
-        // eventSource.ProjectStarted += EventSource_ProjectStarted;
-        // eventSource.ProjectFinished += EventSource_ProjectFinished;
-        // eventSource.TargetStarted += EventSource_TargetStarted;
-        // eventSource.TargetFinished += EventSource_TargetFinished;
-        // eventSource.TaskStarted += EventSource_TaskStarted;
-        // eventSource.TaskFinished += EventSource_TaskFinished;
-        // eventSource.CustomEventRaised += EventSource_CustomEventRaised;
 
         try
         {
@@ -128,15 +99,11 @@ public class CompileCommandsJson : Logger
                 compileCommands = JsonConvert.DeserializeObject<List<CompileCommand>>(File.ReadAllText(outputFilePath));
             }
 
-            //AR - Not an else because it is possible for JsonConvert.DeserializeObject to return null
             if (compileCommands == null)
             {
                 compileCommands = new List<CompileCommand>();
             }
 
-            //AR - Create a dictionary for cleaner and faster cache lookup
-            //We could refactor the code to read and write directly to the cache
-            //but there is no discernable performance difference even on very large code bases
             foreach (CompileCommand command in compileCommands)
             {
                 string key = command.directory + command.file;
@@ -158,119 +125,23 @@ public class CompileCommandsJson : Logger
             }
             else
             {
-                // Unexpected failure
                 throw;
             }
         }
-
     }
 
-    private void EventSource_BuildStarted(object sender, BuildStartedEventArgs args)
-    {
-        log("*** Build started: " + args.BuildEnvironment + " - " + args.Message);
-        foreach (KeyValuePair<string, string> entry in args.BuildEnvironment)
-        {
-            log("*** " + entry.Key + " = " + entry.Value);
-        }
-    }
-
-    private void EventSource_BuildFinished(object sender, BuildFinishedEventArgs args)
-    {
-        log("*** Build finished: " + args.BuildEventContext + " - " + args.Message);
-    }
-
-    private void EventSource_ProjectStarted(object sender, ProjectStartedEventArgs args)
-    {
-        log("*** Project started: " + args.ProjectFile + " - " + args.Message);
-        foreach (KeyValuePair<string, string> entry in args.GlobalProperties)
-        {
-            log("*** " + entry.Key + " = " + entry.Value);
-        }
-        log("*** ParentProjectBuildEventContext: " + args.ParentProjectBuildEventContext);
-        log("*** Items: " + args.Items);
-        foreach (System.Collections.DictionaryEntry item in args.Items)
-        {
-            log("*** Item: " + item.Key + " = " + item.Value);
-        }
-        log("*** ProjectId: " + args.ProjectId);
-        log("*** BuildEventContext: " + args.BuildEventContext);
-    }
-
-    private void EventSource_ProjectFinished(object sender, ProjectFinishedEventArgs args)
-    {
-        log("*** Project finished: " + args.ProjectFile + " - " + args.Message);
-    }
-
-    private void EventSource_TargetStarted(object sender, TargetStartedEventArgs args)
-    {
-        log("*** Target started: " + args.TargetName + " - " + args.Message);
-        log("*** Target Build Event : " + args.BuildEventContext);
-    }
-    private void EventSource_TargetFinished(object sender, TargetFinishedEventArgs args)
-    {
-        log("*** Target finished: " + args.TargetName + " - " + args.Message);
-        log("*** Target Build Event : " + args.BuildEventContext);
-    }
-    private void EventSource_TaskStarted(object sender, TaskStartedEventArgs args)
-    {
-        log("*** Task started: " + args.TaskName + " - " + args.Message);
-        log("*** Task Build Event : " + args.BuildEventContext);
-        log("*** Task Project File : " + args.ProjectFile);
-        log("*** Task Project File : " + args.TaskFile);
-    }
-    private void EventSource_TaskFinished(object sender, TaskFinishedEventArgs args)
-    {
-        log("*** Task finished: " + args.TaskName + " - " + args.Message);
-        log("*** Task Build Event : " + args.BuildEventContext);
-    }
-    private void EventSource_CustomEventRaised(object sender, CustomBuildEventArgs args)
-    {
-        log("*** Custom event raised: " + args.Message);
-        log("*** Custom event Build Event : " + args.BuildEventContext);
-    }
     private void EventSource_AnyEventRaised(object sender, BuildEventArgs args)
     {
-        string include = Environment.GetEnvironmentVariable("INCLUDE");
-        if (include != null)
-        {
-            string[] includePaths = include.Split(';');
-            foreach (string path in includePaths)
-            {
-                if (path.Length > 0 && !includeLookup.ContainsKey(path))
-                {
-                    includeLookup.Add(path, true);
-                }
-            }
-            log("*** INCLUDE " + include);
-        }
-
-        include = Environment.GetEnvironmentVariable("EXTERNAL_INCLUDE");
-        if (include != null)
-        {
-            string[] includePaths = include.Split(';');
-            foreach (string path in includePaths)
-            {
-                if (path.Length > 0 && !includeLookup.ContainsKey(path))
-                {
-                    includeLookup.Add(path, true);
-                }
-            }
-            log("*** EXTERNAL_INCLUDE " + include);
-        }
+        AppendEnvIncludes("INCLUDE");
+        AppendEnvIncludes("EXTERNAL_INCLUDE");
 
         if (args is TaskCommandLineEventArgs taskArgs)
         {
-            // log(taskArgs.TaskName + " ---- " + taskArgs.CommandLine);
-
             if (!(taskArgs.TaskName == "CL" || taskArgs.TaskName == "TrackedExec" || (!string.IsNullOrEmpty(customTask) && taskArgs.TaskName.Contains(customTask))))
             {
                 return;
             }
-            // taskArgs.CommandLine begins with the full path to the compiler, but that path is
-            // *not* escaped/quoted for a shell, and may contain spaces, such as C:\Program Files
-            // (x86)\Microsoft Visual Studio\... As a workaround for this misfeature, find the
-            // end of the path by searching for CL.exe. (This will fail if a user renames the
-            // compiler binary, or installs their tools to a path that includes "CL.exe ".)
+
             const string clExe = "cl.exe ";
             int clExeIndex = taskArgs.CommandLine.ToLower().IndexOf(clExe);
             if (clExeIndex == -1)
@@ -281,14 +152,13 @@ public class CompileCommandsJson : Logger
             List<string> arguments = new List<string>();
 
             string compilerPath = taskArgs.CommandLine.Substring(0, clExeIndex + clExe.Length - 1);
-
             arguments.Add(Path.GetFullPath(compilerPath));
 
-            string argsString = taskArgs.CommandLine.Substring(clExeIndex + clExe.Length).Replace('\n', ' ').Replace('\r', ' ').Replace('\t', ' ').TrimEnd();
+            string argsString = taskArgs.CommandLine.Substring(clExeIndex + clExe.Length)
+                .Replace('\n', ' ').Replace('\r', ' ').Replace('\t', ' ').TrimEnd();
             argsString = Regex.Replace(argsString, @"\s+", " ");
             string[] cmdArgs = CommandLineToArgs(argsString);
 
-            // Options that consume the following argument.
             string[] optionsWithParam = {
                 "D", "I", "F", "U", "FI", "FU",
                 "analyze:log", "analyze:stacksize", "analyze:max_paths",
@@ -310,7 +180,6 @@ public class CompileCommandsJson : Logger
                 }
                 else if (option == "Tc" || option == "Tp")
                 {
-                    // next arg is definitely a source file
                     if (i + 1 < cmdArgs.Length)
                     {
                         filenames.Add(cmdArgs[i + 1]);
@@ -318,25 +187,22 @@ public class CompileCommandsJson : Logger
                 }
                 else if (option.StartsWith("Tc") || option.StartsWith("Tp"))
                 {
-                    // rest of this arg is definitely a source file
                     filenames.Add(option.Substring(2));
                 }
                 else if (option == "TC" || option == "TP")
                 {
-                    // all inputs are treated as source files
                     allFilenamesAreSources = true;
                 }
                 else if (option == "link")
                 {
-                    break; // only linker options follow
+                    break;
                 }
                 else if (isOption || cmdArgs[i].StartsWith("@"))
                 {
-                    // other argument, ignore it
+                    // ignore
                 }
                 else
                 {
-                    // non-argument, add it to our list of potential sources
                     maybeFilenames.Add(cmdArgs[i]);
                     isFile = true;
                 }
@@ -357,8 +223,7 @@ public class CompileCommandsJson : Logger
 
             log("*** Arguments " + string.Join(" ", arguments));
             log("*** MaybeFilenames " + string.Join(" ", maybeFilenames));
-            // Iterate over potential sources, and decide (based on the filename)
-            // whether they are source inputs.
+
             foreach (string filename in maybeFilenames)
             {
                 if (allFilenamesAreSources)
@@ -383,13 +248,8 @@ public class CompileCommandsJson : Logger
 
             string dirname = Path.GetDirectoryName(taskArgs.ProjectFile);
 
-            // For each source file, a CompileCommand entry
             foreach (string filename in filenames)
             {
-                // AR - Iterative build support, we loaded in the existing compile_commands file in the init.
-                // Now we check to see if an entry for the filename exists, if if does we overwrite
-                // the previous result, if it doesn't we add a new entry. We then write the entire list
-                // when the logger shuts down.
                 CompileCommand command;
                 string key = dirname + filename;
                 List<string> prms = new List<string>(arguments);
@@ -408,13 +268,24 @@ public class CompileCommandsJson : Logger
                     compileCommands.Add(command);
                     commandLookup.Add(key, command);
                 }
-
             }
         }
-        else
+    }
+
+    private void AppendEnvIncludes(string envVar)
+    {
+        string include = Environment.GetEnvironmentVariable(envVar);
+        if (include == null) return;
+
+        string[] includePaths = include.Split(';');
+        foreach (string path in includePaths)
         {
-            // log(args.GetType().Name + " -RAW- " + args.SenderName + " - " + args.Message);
+            if (path.Length > 0 && !includeLookup.ContainsKey(path))
+            {
+                includeLookup.Add(path, true);
+            }
         }
+        log($"*** {envVar} " + include);
     }
 
     [DllImport("shell32.dll", SetLastError = true)]
@@ -435,7 +306,6 @@ public class CompileCommandsJson : Logger
                 var p = Marshal.ReadIntPtr(argv, i * IntPtr.Size);
                 args[i] = Marshal.PtrToStringUni(p);
             }
-
             return args;
         }
         finally
@@ -453,7 +323,7 @@ public class CompileCommandsJson : Logger
         base.Shutdown();
     }
 
-    void log (string message)
+    void log(string message)
     {
         if (logStreamWriter != null) {
             logStreamWriter.WriteLine(message);
@@ -473,7 +343,5 @@ public class CompileCommandsJson : Logger
     private List<CompileCommand> compileCommands;
     private Dictionary<string, CompileCommand> commandLookup;
     private Dictionary<string, bool> includeLookup;
-    // private static Dictionary<string, bool> includeLookup = new Dictionary<string, bool>();
-
     private StreamWriter logStreamWriter;
 }
