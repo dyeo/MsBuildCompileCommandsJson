@@ -22,6 +22,33 @@ using Newtonsoft.Json;
 /// </summary>
 public class CompileCommandsJson : Logger
 {
+    static string GetRelativePath(string fromPath, string toPath)
+    {
+        try
+        {
+            Uri fromUri = new Uri(AppendDirectorySeparatorChar(fromPath));
+            Uri toUri = new Uri(AppendDirectorySeparatorChar(toPath));
+
+            Uri relativeUri = fromUri.MakeRelativeUri(toUri);
+            string relativePath = Uri.UnescapeDataString(relativeUri.ToString());
+
+            return relativePath.Replace('/', Path.DirectorySeparatorChar);
+        }
+        catch
+        {
+            return "";
+        }
+    }
+
+    static string AppendDirectorySeparatorChar(string path)
+    {
+        if (!Path.HasExtension(path) && !path.EndsWith(Path.DirectorySeparatorChar.ToString()))
+            path += Path.DirectorySeparatorChar;
+        return path;
+    }
+
+    const StringComparison Comp = StringComparison.OrdinalIgnoreCase;
+
     public override void Initialize(IEventSource eventSource)
     {
         outputFilePath = "compile_commands.json";
@@ -43,19 +70,19 @@ public class CompileCommandsJson : Logger
             for (int i = 0; i < args.Length; ++i)
             {
                 var arg = args[i];
-                if (arg.StartsWith("path=", StringComparison.OrdinalIgnoreCase))
+                if (arg.StartsWith("path=", Comp))
                 {
                     outputFilePath = arg.Substring(5);
                 }
-                else if (arg.StartsWith("task=", StringComparison.OrdinalIgnoreCase))
+                else if (arg.StartsWith("task=", Comp))
                 {
                     customTask = arg.Substring(5);
                 }
-                else if (arg.StartsWith("cl=", StringComparison.OrdinalIgnoreCase))
+                else if (arg.StartsWith("cl=", Comp))
                 {
                     customClExe = arg.Substring(3);
                 }
-                else if (arg.StartsWith("log=", StringComparison.OrdinalIgnoreCase))
+                else if (arg.StartsWith("log=", Comp))
                 {
                     var logFile = arg.Substring(4);
                     if (!string.IsNullOrEmpty(logFile))
@@ -75,7 +102,7 @@ public class CompileCommandsJson : Logger
         }
 
         if (!string.IsNullOrEmpty(logFilePath)) {
-            if (logFilePath.StartsWith("stdout", StringComparison.OrdinalIgnoreCase)) {
+            if (logFilePath.StartsWith("stdout", Comp)) {
                 logStreamWriter = new StreamWriter(Console.OpenStandardOutput());
                 logStreamWriter.AutoFlush = true;
                 Console.SetOut(logStreamWriter);
@@ -86,7 +113,7 @@ public class CompileCommandsJson : Logger
         }
 
         string logStdout = Environment.GetEnvironmentVariable("MSBUILD_LOG_STDOUT");
-        if (logStdout != null && logStdout.Equals("true", StringComparison.OrdinalIgnoreCase))
+        if (logStdout != null && logStdout.Equals("true", Comp))
         {
             logStreamWriter = new StreamWriter(Console.OpenStandardOutput());
             logStreamWriter.AutoFlush = true;
@@ -145,12 +172,12 @@ public class CompileCommandsJson : Logger
             var clExe = (string.IsNullOrEmpty(customClExe) ? "cl.exe" : customClExe) + " ";
             var clBasename = clExe.Substring(0, clExe.LastIndexOf(".") < 0 ? clExe.Length : clExe.LastIndexOf("."));
 
-            if (!(taskArgs.TaskName.Equals(clBasename, StringComparison.OrdinalIgnoreCase) || taskArgs.TaskName == "TrackedExec" || (!string.IsNullOrEmpty(customTask) && taskArgs.TaskName.Contains(customTask))))
+            if (!(taskArgs.TaskName.Equals(clBasename, Comp) || taskArgs.TaskName == "TrackedExec" || (!string.IsNullOrEmpty(customTask) && taskArgs.TaskName.Contains(customTask))))
             {
                 return;
             }
 
-            var clExeIndex = taskArgs.CommandLine.IndexOf(clExe, StringComparison.OrdinalIgnoreCase);
+            var clExeIndex = taskArgs.CommandLine.IndexOf(clExe, Comp);
             if (clExeIndex == -1)
             {
                 throw new LoggerException($"Unexpected lack of {clExe} in {taskArgs.CommandLine}");
@@ -167,14 +194,15 @@ public class CompileCommandsJson : Logger
             var cmdArgs = CommandLineToArgs(argsString);
 
             string[] optionsWithParam = {
-                "D", "I", "F", "U", "FI", "FU",
+                "D", "I", "F", "U", "FI", "FU", "Yc", "Yu",
                 "analyze:log", "analyze:stacksize", "analyze:max_paths",
                 "analyze:ruleset", "analyze:plugin"};
 
             var maybeFilenames = new List<string>();
             var filenames = new List<string>();
             var pchHeaders = new List<string>();
-            bool allFilenamesAreSources = false;
+            var allFilenamesAreSources = false;
+            var addPchIncludes = false;
 
             for (int i = 0; i < cmdArgs.Length; i++)
             {
@@ -186,6 +214,7 @@ public class CompileCommandsJson : Logger
                 {
                     if (option == "Yc" || option == "Yu")
                     {
+                        addPchIncludes = true;
                         if (i + 1 < cmdArgs.Length && !(cmdArgs[i + 1].StartsWith("/") || cmdArgs[i + 1].StartsWith("-")))
                         {
                             var hdrPeek = cmdArgs[i + 1];
@@ -194,6 +223,7 @@ public class CompileCommandsJson : Logger
                     }
                     else if (option.StartsWith("Yc") || option.StartsWith("Yu"))
                     {
+                        addPchIncludes = true;
                         var hdr = option.Substring(2);
                         if (!string.IsNullOrEmpty(hdr)) pchHeaders.Add(hdr.Trim('"'));
                     }
@@ -290,6 +320,16 @@ public class CompileCommandsJson : Logger
                 CompileCommand command;
                 var key = dirname + filename;
                 var prms = new List<string>(arguments);
+
+                if (addPchIncludes)
+                {
+                    var fileDirname = Path.GetDirectoryName(filename);
+                    prms.Add($"/I{fileDirname}\\pch\\");
+                    prms.Add($"/I{fileDirname}\\..\\pch\\");
+                    prms.Add($"/I.\\pch\\");
+                    prms.Add($"/I..\\pch\\");
+                }
+
                 prms.Add(filename);
 
                 if (commandLookup.ContainsKey(key))
