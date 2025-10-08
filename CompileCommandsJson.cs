@@ -42,18 +42,22 @@ public class CompileCommandsJson : Logger
             string[] args = Parameters.Split(',');
             for (int i = 0; i < args.Length; ++i)
             {
-                string arg = args[i];
-                if (arg.ToLower().StartsWith("path="))
+                var arg = args[i];
+                if (arg.StartsWith("path=", StringComparison.OrdinalIgnoreCase))
                 {
                     outputFilePath = arg.Substring(5);
                 }
-                else if (arg.ToLower().StartsWith("task="))
+                else if (arg.StartsWith("task=", StringComparison.OrdinalIgnoreCase))
                 {
                     customTask = arg.Substring(5);
                 }
-                else if (arg.ToLower().StartsWith("log="))
+                else if (arg.StartsWith("cl=", StringComparison.OrdinalIgnoreCase))
                 {
-                    string logFile = arg.Substring(4);
+                    customClExe = arg.Substring(3);
+                }
+                else if (arg.StartsWith("log=", StringComparison.OrdinalIgnoreCase))
+                {
+                    var logFile = arg.Substring(4);
                     if (!string.IsNullOrEmpty(logFile))
                     {
                         logFilePath = logFile;
@@ -71,7 +75,7 @@ public class CompileCommandsJson : Logger
         }
 
         if (!string.IsNullOrEmpty(logFilePath)) {
-            if (logFilePath.ToLower().StartsWith("stdout")) {
+            if (logFilePath.StartsWith("stdout", StringComparison.OrdinalIgnoreCase)) {
                 logStreamWriter = new StreamWriter(Console.OpenStandardOutput());
                 logStreamWriter.AutoFlush = true;
                 Console.SetOut(logStreamWriter);
@@ -82,7 +86,7 @@ public class CompileCommandsJson : Logger
         }
 
         string logStdout = Environment.GetEnvironmentVariable("MSBUILD_LOG_STDOUT");
-        if (logStdout != null && logStdout.ToLower() == "true")
+        if (logStdout != null && logStdout.Equals("true", StringComparison.OrdinalIgnoreCase))
         {
             logStreamWriter = new StreamWriter(Console.OpenStandardOutput());
             logStreamWriter.AutoFlush = true;
@@ -105,7 +109,7 @@ public class CompileCommandsJson : Logger
                 compileCommands = new List<CompileCommand>();
             }
 
-            foreach (CompileCommand command in compileCommands)
+            foreach (var command in compileCommands)
             {
                 string key = command.directory + command.file;
                 commandLookup.Add(key, command);
@@ -138,36 +142,38 @@ public class CompileCommandsJson : Logger
 
         if (args is TaskCommandLineEventArgs taskArgs)
         {
-            if (!(taskArgs.TaskName == "CL" || taskArgs.TaskName == "TrackedExec" || (!string.IsNullOrEmpty(customTask) && taskArgs.TaskName.Contains(customTask))))
+            var clExe = (string.IsNullOrEmpty(customClExe) ? "cl.exe" : customClExe) + " ";
+            var clBasename = clExe.Substring(0, clExe.LastIndexOf(".") < 0 ? clExe.Length : clExe.LastIndexOf("."));
+
+            if (!(taskArgs.TaskName.Equals(clBasename, StringComparison.OrdinalIgnoreCase) || taskArgs.TaskName == "TrackedExec" || (!string.IsNullOrEmpty(customTask) && taskArgs.TaskName.Contains(customTask))))
             {
                 return;
             }
 
-            const string clExe = "cl.exe ";
-            int clExeIndex = taskArgs.CommandLine.ToLower().IndexOf(clExe);
+            var clExeIndex = taskArgs.CommandLine.IndexOf(clExe, StringComparison.OrdinalIgnoreCase);
             if (clExeIndex == -1)
             {
-                throw new LoggerException($"Unexpected lack of CL.exe in {taskArgs.CommandLine}");
+                throw new LoggerException($"Unexpected lack of {clExe} in {taskArgs.CommandLine}");
             }
 
-            List<string> arguments = new List<string>();
+            var arguments = new List<string>();
 
-            string compilerPath = taskArgs.CommandLine.Substring(0, clExeIndex + clExe.Length - 1);
+            var compilerPath = taskArgs.CommandLine.Substring(0, clExeIndex + clExe.Length - 1);
             arguments.Add(Path.GetFullPath(compilerPath));
 
-            string argsString = taskArgs.CommandLine.Substring(clExeIndex + clExe.Length)
+            var argsString = taskArgs.CommandLine.Substring(clExeIndex + clExe.Length)
                 .Replace('\n', ' ').Replace('\r', ' ').Replace('\t', ' ').TrimEnd();
             argsString = Regex.Replace(argsString, @"\s+", " ");
-            string[] cmdArgs = CommandLineToArgs(argsString);
+            var cmdArgs = CommandLineToArgs(argsString);
 
             string[] optionsWithParam = {
                 "D", "I", "F", "U", "FI", "FU",
                 "analyze:log", "analyze:stacksize", "analyze:max_paths",
                 "analyze:ruleset", "analyze:plugin"};
 
-            List<string> maybeFilenames = new List<string>();
-            List<string> filenames = new List<string>();
-            List<string> pchHeaders = new List<string>();
+            var maybeFilenames = new List<string>();
+            var filenames = new List<string>();
+            var pchHeaders = new List<string>();
             bool allFilenamesAreSources = false;
 
             for (int i = 0; i < cmdArgs.Length; i++)
@@ -182,13 +188,13 @@ public class CompileCommandsJson : Logger
                     {
                         if (i + 1 < cmdArgs.Length && !(cmdArgs[i + 1].StartsWith("/") || cmdArgs[i + 1].StartsWith("-")))
                         {
-                            string hdrPeek = cmdArgs[i + 1];
+                            var hdrPeek = cmdArgs[i + 1];
                             if (!string.IsNullOrEmpty(hdrPeek)) pchHeaders.Add(hdrPeek.Trim('"'));
                         }
                     }
                     else if (option.StartsWith("Yc") || option.StartsWith("Yu"))
                     {
-                        string hdr = option.Substring(2);
+                        var hdr = option.Substring(2);
                         if (!string.IsNullOrEmpty(hdr)) pchHeaders.Add(hdr.Trim('"'));
                     }
                 }
@@ -234,7 +240,7 @@ public class CompileCommandsJson : Logger
 
             if (includeLookup.Count > 0)
             {
-                foreach (string path in includeLookup.Keys)
+                foreach (var path in includeLookup.Keys)
                 {
                     arguments.Add("/I" + path);
                 }
@@ -244,7 +250,7 @@ public class CompileCommandsJson : Logger
             {
                 if (hdr.IndexOf('\\') >= 0 || hdr.IndexOf('/') >= 0)
                 {
-                    string dir = Path.GetDirectoryName(hdr);
+                    var dir = Path.GetDirectoryName(hdr);
                     if (!string.IsNullOrEmpty(dir))
                     {
                         arguments.Add("/I" + dir);
@@ -255,7 +261,7 @@ public class CompileCommandsJson : Logger
             log("*** Arguments " + string.Join(" ", arguments));
             log("*** MaybeFilenames " + string.Join(" ", maybeFilenames));
 
-            foreach (string filename in maybeFilenames)
+            foreach (var filename in maybeFilenames)
             {
                 if (allFilenamesAreSources)
                 {
@@ -263,7 +269,7 @@ public class CompileCommandsJson : Logger
                 }
                 else
                 {
-                    int suffixPos = filename.LastIndexOf('.');
+                    var suffixPos = filename.LastIndexOf('.');
                     if (suffixPos != -1)
                     {
                         string ext = filename.Substring(suffixPos + 1).ToLowerInvariant();
@@ -277,13 +283,13 @@ public class CompileCommandsJson : Logger
 
             log("*** Filenames " + string.Join(" ", filenames));
 
-            string dirname = Path.GetDirectoryName(taskArgs.ProjectFile);
+            var dirname = Path.GetDirectoryName(taskArgs.ProjectFile);
 
-            foreach (string filename in filenames)
+            foreach (var filename in filenames)
             {
                 CompileCommand command;
-                string key = dirname + filename;
-                List<string> prms = new List<string>(arguments);
+                var key = dirname + filename;
+                var prms = new List<string>(arguments);
                 prms.Add(filename);
 
                 if (commandLookup.ContainsKey(key))
@@ -309,7 +315,7 @@ public class CompileCommandsJson : Logger
         if (include == null) return;
 
         string[] includePaths = include.Split(';');
-        foreach (string path in includePaths)
+        foreach (var path in includePaths)
         {
             if (path.Length > 0 && !includeLookup.ContainsKey(path))
             {
@@ -368,6 +374,7 @@ public class CompileCommandsJson : Logger
         public string file;
     }
 
+    string customClExe;
     string customTask;
     string outputFilePath;
     string logFilePath;
