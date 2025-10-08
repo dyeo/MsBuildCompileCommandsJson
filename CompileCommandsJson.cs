@@ -18,6 +18,7 @@ using Newtonsoft.Json;
 /// - Same task filtering and command-line parsing.
 /// - Same file classification logic and output structure.
 /// - Same memory free semantics for CommandLineToArgvW.
+/// - Also adds /I for directories containing PCH headers named by /Yc or /Yu (split or combined forms).
 /// </summary>
 public class CompileCommandsJson : Logger
 {
@@ -166,6 +167,7 @@ public class CompileCommandsJson : Logger
 
             List<string> maybeFilenames = new List<string>();
             List<string> filenames = new List<string>();
+            List<string> pchHeaders = new List<string>();
             bool allFilenamesAreSources = false;
 
             for (int i = 0; i < cmdArgs.Length; i++)
@@ -173,6 +175,23 @@ public class CompileCommandsJson : Logger
                 bool isOption = cmdArgs[i].StartsWith("/") || cmdArgs[i].StartsWith("-");
                 string option = isOption ? cmdArgs[i].Substring(1) : "";
                 bool isFile = false;
+
+                if (isOption)
+                {
+                    if (option == "Yc" || option == "Yu")
+                    {
+                        if (i + 1 < cmdArgs.Length && !(cmdArgs[i + 1].StartsWith("/") || cmdArgs[i + 1].StartsWith("-")))
+                        {
+                            string hdrPeek = cmdArgs[i + 1];
+                            if (!string.IsNullOrEmpty(hdrPeek)) pchHeaders.Add(hdrPeek.Trim('"'));
+                        }
+                    }
+                    else if (option.StartsWith("Yc") || option.StartsWith("Yu"))
+                    {
+                        string hdr = option.Substring(2);
+                        if (!string.IsNullOrEmpty(hdr)) pchHeaders.Add(hdr.Trim('"'));
+                    }
+                }
 
                 if (isOption && Array.Exists(optionsWithParam, e => e == option))
                 {
@@ -218,6 +237,18 @@ public class CompileCommandsJson : Logger
                 foreach (string path in includeLookup.Keys)
                 {
                     arguments.Add("/I" + path);
+                }
+            }
+
+            foreach (var hdr in pchHeaders)
+            {
+                if (hdr.IndexOf('\\') >= 0 || hdr.IndexOf('/') >= 0)
+                {
+                    string dir = Path.GetDirectoryName(hdr);
+                    if (!string.IsNullOrEmpty(dir))
+                    {
+                        arguments.Add("/I" + dir);
+                    }
                 }
             }
 
